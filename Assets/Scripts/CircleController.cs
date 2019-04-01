@@ -19,7 +19,7 @@ public class CircleController : MonoBehaviour
         if (transform.localScale.x < 0)
         {
             Destroy(gameObject);
-            Сontroller.Score += 10;
+            Сontroller.AddScore(10);
         }
         if (transform.localScale.x > 5)
             Сontroller.GameOver();
@@ -28,6 +28,6 @@ public class CircleController : MonoBehaviour
     public void OnMouseDown()
     {
         transform.localScale -= Vector3.one * Сontroller.Decrement;
-        Сontroller.Score++;
+        Сontroller.AddScore(1);
     }
 }

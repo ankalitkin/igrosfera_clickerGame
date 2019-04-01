@@ -3,73 +3,79 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.SocialPlatforms.Impl;
+using UnityEngine.UI;
+using DG.Tweening;
 using Random = UnityEngine.Random;
 
-[RequireComponent(typeof(ColorGenerator))]
 public class GameManager : MonoBehaviour
 {
     [SerializeField, HideInInspector] private Camera _camera;
-    [SerializeField, HideInInspector] private ColorGenerator _colorGenerator;
-    [SerializeField, HideInInspector] private TextMesh _scoreTextMesh;
+    [SerializeField, HideInInspector] private Text _scoreText;
+    [SerializeField, HideInInspector] private Text _timerText;
     [SerializeField] private GameObject _circle;
     [SerializeField] private GameObject _scoreObject;
+    [SerializeField] private GameObject _timerObject;
     [SerializeField] private GameObject _gameOverObject;
+    [Space]
     [SerializeField, Min(0)] private float _growthSpeed = 0.1f;
     [SerializeField, Min(0)] private float _decrement = 0.05f;
     [SerializeField, Min(0)] private float _delay = 1f;
-    public float lastClickTime = 0;
+    [SerializeField, HideInInspector] private Color _defaultScoreColor;
+    private int _score;
+    private float _lastClickTime;
     public float GrowthSpeed => _growthSpeed;
     public float Decrement => _decrement;
-    public int Score { get; set; }
-    private bool gameActive = true;
+    public int Score { get { return _score; } }
+    private bool _gameStarted = true;
+    [Space]
+    [SerializeField, Range(0, 1)] private float _saturation = 0.9f;
+    [SerializeField, Range(0, 1)] private float _vibrance = 0.9f;
+    [SerializeField, Range(0, 1)] private float _offset = 0;
+    [SerializeField, Range(1, 360)] private int _nuberOfColors = 12;
+
+    public Color NewColor()
+    {
+        float hue = (Random.Range(0, _nuberOfColors) + _offset) / _nuberOfColors;
+        return Color.HSVToRGB(hue, _saturation, _vibrance);
+    }
 
     private void OnValidate()
     {
-        _colorGenerator = GetComponent<ColorGenerator>();
-        _scoreTextMesh = _scoreObject.GetComponent<TextMesh>();
+        _scoreText = _scoreObject.GetComponent<Text>();
+        _timerText = _timerObject.GetComponent<Text>();
         _camera = Camera.main;
+        _defaultScoreColor = _scoreText.color;
     }
 
     private void Start()
     {
         StartCoroutine(Generate(_delay));
+        StartCoroutine(UpdateTime());
         Input.simulateMouseWithTouches = false;
+        AddScore(0);
     }
 
     void Update()
     {
-        lastClickTime += Time.deltaTime;
+        _lastClickTime += Time.deltaTime;
 
-        if (gameActive && (Input.GetMouseButton(0) || Input.touchCount > 0))
-            lastClickTime = 0;
+        if (_gameStarted && (Input.GetMouseButton(0) || Input.touchCount > 0))
+            _lastClickTime = 0;
 
-        if (!gameActive && lastClickTime > 0.5 && (Input.GetMouseButton(0) || Input.touchCount > 0))
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        if (!_gameStarted && _lastClickTime > 0.5 && (Input.GetMouseButton(0) || Input.touchCount > 0))
+            SceneManager.LoadScene("MenuScene");
 
-        ProcessAllCircles();
+        if (_gameStarted)
+            ProcessAllCircles();
 
-        if (_scoreObject != null)
-        {
-            Vector3 pos = _camera.ViewportToWorldPoint(new Vector2(0.04f, 0.96f));
-            pos = new Vector3(pos.x, pos.y, _scoreObject.transform.position.z);
-            _scoreObject.transform.position = pos;
-            _scoreTextMesh.text = "Score: " + Score;
-        }
 
-        if (_gameOverObject != null && _gameOverObject.activeSelf)
-        {
-            float s = _camera.ViewportToWorldPoint(new Vector2(1f, 0.5f)).x -
-                    _camera.ViewportToWorldPoint(new Vector2(0f, 0.5f)).x;
-            _gameOverObject.transform.localScale = Vector3.one * s;
-        }
     }
 
     public void GameOver()
     {
         _growthSpeed = 0;
         _gameOverObject.SetActive(true);
-        gameActive = false;
+        _gameStarted = false;
         StopAllCoroutines();
     }
 
@@ -89,6 +95,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void AddScore(int value)
+    {
+        _score += value;
+        _scoreText.text = "Score: " + _score;
+        if (value < 10)
+            return;
+        _scoreText.color = Color.red;
+        DOTween.To(() => _scoreText.color, x => _scoreText.color = x, _defaultScoreColor, 1f);
+    }
+
     private IEnumerator Generate(float time)
     {
         while (true)
@@ -98,9 +114,18 @@ public class GameManager : MonoBehaviour
                 continue;
             Vector2 pos = _camera.ViewportToWorldPoint(viewportPos);
             var circle = Instantiate(_circle, pos, Quaternion.identity).GetComponent<CircleController>();
-            circle.Color = _colorGenerator.NewColor();
+            circle.Color = NewColor();
             circle.Сontroller = this;
             yield return new WaitForSeconds(time);
+        }
+    }
+
+    private IEnumerator UpdateTime()
+    {
+        while (true)
+        {
+            _timerText.text = "Time: " + (int)Time.timeSinceLevelLoad;
+            yield return new WaitForSeconds(1);
         }
     }
 }
