@@ -9,6 +9,9 @@ using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
+    public static bool Adventure = false;
+    private int circleCounter;
+    private int circleNumber = 3;
     [SerializeField, HideInInspector] private Camera _camera;
     [SerializeField, HideInInspector] private Text _scoreText;
     [SerializeField, HideInInspector] private Text _timerText;
@@ -49,10 +52,12 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        StartCoroutine(Generate(_delay));
+        if (!Adventure)
+            StartCoroutine(Generate(_delay));
         StartCoroutine(UpdateTime());
         Input.simulateMouseWithTouches = false;
         AddScore(0);
+        circleCounter = 0;
     }
 
     void Update()
@@ -68,7 +73,11 @@ public class GameManager : MonoBehaviour
         if (_gameStarted)
             ProcessAllCircles();
 
-
+        if (_gameStarted && Adventure)
+        {
+            for (int i = circleCounter; i < circleNumber; i++)
+                newCircle();
+        }
     }
 
     public void GameOver()
@@ -109,14 +118,25 @@ public class GameManager : MonoBehaviour
     {
         while (true)
         {
-            Vector2 viewportPos = new Vector2(Random.Range(0.04f, 0.96f), Random.Range(0.04f, 0.96f));
-            if(Physics.Raycast(_camera.ViewportPointToRay(viewportPos)))
-                continue;
-            Vector2 pos = _camera.ViewportToWorldPoint(viewportPos);
-            var circle = Instantiate(_circle, pos, Quaternion.identity).GetComponent<CircleController>();
-            circle.Color = NewColor();
-            circle.Сontroller = this;
+            newCircle();
             yield return new WaitForSeconds(time);
+        }
+    }
+
+    private void newCircle()
+    {
+        while (true)
+        {
+            Vector2 viewportPos = new Vector2(Random.Range(0.04f, 0.96f), Random.Range(0.04f, 0.96f));
+            if (!Physics.Raycast(_camera.ViewportPointToRay(viewportPos)))
+            {
+                Vector2 pos = _camera.ViewportToWorldPoint(viewportPos);
+                var circle = Instantiate(_circle, pos, Quaternion.identity).GetComponent<CircleController>();
+                circle.Color = NewColor();
+                circle.Controller = this;
+                circleCounter++;
+                return;
+            }
         }
     }
 
@@ -127,5 +147,16 @@ public class GameManager : MonoBehaviour
             _timerText.text = "Time: " + (int)Time.timeSinceLevelLoad;
             yield return new WaitForSeconds(1);
         }
+    }
+
+    public void CircleHit()
+    {
+        AddScore(1);
+    }
+
+    public void CircleDestroed()
+    {
+        AddScore(10);
+        circleCounter--;
     }
 }

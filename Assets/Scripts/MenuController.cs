@@ -12,8 +12,16 @@ public class MenuController : MonoBehaviour
 
     public void PlayButtonClicked()
     {
+        GameManager.Adventure = false;
         SceneManager.LoadScene("MainScene");
     }
+
+    public void AdventureButtonClicked()
+    {
+        GameManager.Adventure = true;
+        SceneManager.LoadScene("MainScene");
+    }
+
 
     public void AboutButtonClicked()
     {

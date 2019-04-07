@@ -5,7 +5,7 @@ using UnityEngine.SocialPlatforms.Impl;
 
 public class CircleController : MonoBehaviour
 {
-    public GameManager Сontroller { get; set; }
+    public GameManager Controller { get; set; }
 
     public Color Color
     {
@@ -15,19 +15,19 @@ public class CircleController : MonoBehaviour
 
     void Update()
     {
-        transform.localScale += Vector3.one * Сontroller.GrowthSpeed * Time.deltaTime;
+        transform.localScale += Vector3.one * Controller.GrowthSpeed * Time.deltaTime;
         if (transform.localScale.x < 0)
         {
             Destroy(gameObject);
-            Сontroller.AddScore(10);
+            Controller.CircleDestroed();
         }
         if (transform.localScale.x > 5)
-            Сontroller.GameOver();
+            Controller.GameOver();
     }
 
     public void OnMouseDown()
     {
-        transform.localScale -= Vector3.one * Сontroller.Decrement;
-        Сontroller.AddScore(1);
+        transform.localScale -= Vector3.one * Controller.Decrement;
+        Controller.CircleHit();
     }
 }
